@@ -1,0 +1,20 @@
+{
+  "name": "microsoft-copilot-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --env-file=.env --watch src/server.mjs",
+    "start": "node --env-file=.env src/server.mjs",
+    "check": "node --check src/server.mjs && node --check src/standard-oauth.mjs && node --check src/standard-microsoft.mjs && node --check src/loopback-login.mjs && node --check src/standard-config.mjs && node --check src/interaction-history.mjs && node --check src/history-auth.mjs && node --check src/msal-cache.mjs"
+  },
+  "dependencies": {
+    "@azure/msal-node": "6.0.1",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "express": "5.2.1",
+    "zod": "4.6.5"
+  }
+}
