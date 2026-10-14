@@ -36,7 +36,16 @@ http://localhost:8787/mcp
 
 ## MCP client setup
 
-Deploy the service to an HTTPS endpoint, then add the `/mcp` URL to the MCP client's remote-server configuration.
+Deploy the service to `https://copilot.zcloak.ai` (or another HTTPS origin), then add the `/mcp` URL to the MCP client's remote-server configuration. For this deployment use:
+
+```env
+MCP_PUBLIC_ORIGIN=https://copilot.zcloak.ai
+MCP_BROWSER_ORIGIN=https://copilot.zcloak.ai
+MCP_BIND_HOST=0.0.0.0
+M365_MCP_LOGIN_MODE=device-code
+```
+
+`MCP_PUBLIC_ORIGIN` is the origin advertised to remote MCP clients. `MCP_BROWSER_ORIGIN` is the origin used for the browser OAuth flow; keeping them identical prevents OAuth cookies from being split across hostnames. `device-code` is required for a remote server because the loopback callback is only suitable when the browser and MCP server run on the same machine.
 
 The server exposes standard MCP OAuth endpoints:
 

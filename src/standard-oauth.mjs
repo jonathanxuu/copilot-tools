@@ -9,8 +9,8 @@ const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', 
 export const page = body => `<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Microsoft Copilot MCP</title><style>body{font:17px/1.6 system-ui;max-width:680px;margin:60px auto;padding:24px;color:#172b3a}button,a{font:inherit}button{padding:12px 18px;background:#245d70;color:white;border:0;border-radius:8px}code{font-size:24px}small{color:#556}</style><h1>Microsoft Copilot MCP</h1>${body}</html>`;
 
 export function createOAuthProvider(origin, { login = startMicrosoftLogin, connectionOptions = {} } = {}) {
-  // Docker needs host.docker.internal, but the browser must use a resolvable
-  // loopback origin so the OAuth flow cookie remains on the same host.
+  // Keep the browser OAuth origin explicit. It must match the public origin so
+  // the OAuth flow cookie remains on the same host after Microsoft sign-in.
   const browserOrigin = process.env.MCP_BROWSER_ORIGIN ?? origin;
   const resource = `${origin}/mcp`;
   const clients = new Map();
