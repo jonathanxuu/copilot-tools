@@ -74,7 +74,7 @@ The Microsoft adapter is isolated in `src/standard-microsoft.mjs` so endpoint or
 
 ## Authentication and storage
 
-The current implementation uses the MCP SDK OAuth provider and keeps MCP connections in memory. Microsoft MSAL cache data is encrypted at rest using `M365_MCP_TOKEN_CACHE_KEY` and stored at `M365_MCP_TOKEN_CACHE_PATH`; the MCP bearer connection still expires and requires re-authorization after a restart. Copilot conversation-handle mappings are persisted at `M365_MCP_CONVERSATION_STATE_PATH`, so a caller that reuses the returned `conversationHandle` can continue the same Copilot conversation after a server restart.
+The current implementation uses the MCP SDK OAuth provider and keeps MCP connections in memory. Microsoft MSAL cache data is encrypted at rest using `M365_MCP_TOKEN_CACHE_KEY` and stored at `M365_MCP_TOKEN_CACHE_PATH`; the MCP bearer connection still expires and requires re-authorization after a restart. Copilot conversation-handle mappings and successful real-time Chat API results are persisted at `M365_MCP_CONVERSATION_STATE_PATH`, so a caller that reuses the returned `conversationHandle` can continue the same Copilot conversation after a server restart and can inspect local activity before Microsoft Interaction Export includes it.
 
 Copilot history is disabled unless `M365_MCP_HISTORY_ENABLED=true`. When enabled, the server uses a certificate-backed app-only Microsoft Graph token with `AiEnterpriseInteraction.Read.All`, then locally binds results to the signed-in user's tenant and object ID. History queries default to the most recent 30 days; callers may provide custom dates within the server-enforced five-year maximum lookback. `M365_MCP_HISTORY_DEFAULT_DAYS` changes the default window.
 

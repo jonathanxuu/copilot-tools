@@ -131,9 +131,11 @@ export function createConnection(identity, { onAudit = () => {}, historyReaderFa
         const result = await request(`/beta/copilot/conversations/${encodeURIComponent(remote)}/chat`, { method: 'POST', body: JSON.stringify({ message: { text }, locationHint: { timeZone: config.timeZone }, contextualResources: { webContext: { isWebEnabled: false } } }) });
         conversations.set(conversationHandle, remote);
         conversationState.set(identity.userId, conversationHandle, remote);
+        conversationState.addActivity(identity.userId, { conversationHandle, remoteConversationId: remote, question, selectedContextIds: contextIds, result });
         return { provider: 'Microsoft 365 Copilot Chat API beta', conversationHandle, selectedContextIds: contextIds, result };
       } finally { busy = false; }
     },
+    listLocalActivity(limit = 50) { active(); return conversationState.listActivity(identity.userId, limit); },
     async listHistory(filters = {}) {
       active();
       if (process.env.MICROSOFT_ACCOUNT_MODE === 'personal') throw new Error('PERSONAL_ACCOUNT_HISTORY_UNSUPPORTED');

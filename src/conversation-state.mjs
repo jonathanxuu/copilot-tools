@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, chmodSync, writeFileSync, renameSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const emptyState = () => ({ conversations: {} });
+const emptyState = () => ({ conversations: {}, activities: [] });
 
 export function createConversationState(filePath) {
   const path = resolve(filePath);
@@ -10,7 +10,7 @@ export function createConversationState(filePath) {
   if (existsSync(path)) {
     try {
       const parsed = JSON.parse(readFileSync(path, 'utf8'));
-      if (parsed && typeof parsed === 'object' && parsed.conversations && typeof parsed.conversations === 'object') state = parsed;
+      if (parsed && typeof parsed === 'object' && parsed.conversations && typeof parsed.conversations === 'object') state = { conversations: parsed.conversations, activities: Array.isArray(parsed.activities) ? parsed.activities : [] };
     } catch {
       // A corrupt state file must not prevent the MCP server from starting.
     }
@@ -30,6 +30,14 @@ export function createConversationState(filePath) {
     set(userId, handle, remoteConversationId) {
       state.conversations[`${userId}:${handle}`] = { remoteConversationId, updatedAt: new Date().toISOString() };
       save();
+    },
+    addActivity(userId, activity) {
+      state.activities.push({ ...activity, userId, createdAt: activity.createdAt ?? new Date().toISOString() });
+      if (state.activities.length > 2000) state.activities.splice(0, state.activities.length - 2000);
+      save();
+    },
+    listActivity(userId, limit = 50) {
+      return state.activities.filter(item => item.userId === userId).slice(-Math.min(Math.max(limit, 1), 100)).reverse();
     },
     removeUser(userId) {
       const prefix = `${userId}:`;
