@@ -59,6 +59,8 @@ export function createApp(origin) {
     'host.docker.internal',
   ];
   const app = createMcpExpressApp({ host: bindHost, allowedHosts });
+  // Caddy terminates HTTPS and forwards the original client IP.
+  app.set('trust proxy', 1);
   app.disable('x-powered-by');
   app.use(express.json({ limit: '2mb' }));
   app.use((req, res, next) => {

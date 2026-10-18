@@ -43,10 +43,10 @@ export function normalizeInteraction(item) {
   return { id: item.id, sessionId: item.sessionId, requestId: item.requestId ?? null, role: item.interactionType === 'userPrompt' ? 'user' : item.interactionType === 'aiResponse' ? 'assistant' : 'unknown', createdAt: new Date(item.createdDateTime).toISOString(), appClass: item.appClass ?? null, text, links: item.links ?? [], contexts: item.contexts ?? [], warnings, raw: item, rawSha256: digest(JSON.stringify(item)) };
 }
 
-export function createInteractionHistoryReader({ tenantId, userId, boundSubject, from, to, deadline, getToken, maxRequests = 10, budget = { used: 0, max: maxRequests }, allowedSessionIds, fetchImpl = fetch, onAudit = () => {} }) {
+export function createInteractionHistoryReader({ tenantId, userId, boundSubject, from, to, maxLookbackMs = 5 * 366 * 86400000, deadline, getToken, maxRequests = 10, budget = { used: 0, max: maxRequests }, allowedSessionIds, fetchImpl = fetch, onAudit = () => {} }) {
   if (!guid.test(tenantId ?? '') || !guid.test(userId ?? '') || boundSubject !== `${tenantId}:${userId}`) fail('HISTORY_IDENTITY_NOT_BOUND');
   const start = Date.parse(from), end = Date.parse(to);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end || end - start > 5 * 366 * 86400000) fail('INVALID_HISTORY_WINDOW');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end || end - start > maxLookbackMs) fail('INVALID_HISTORY_WINDOW');
   const path = `/v1.0/copilot/users/${userId}/interactionHistory/getAllEnterpriseInteractions`;
   if (allowedSessionIds !== undefined && (!Array.isArray(allowedSessionIds) || allowedSessionIds.some(id => typeof id !== 'string' || !id))) fail('INVALID_HISTORY_SESSION_SELECTION');
   const allowed = allowedSessionIds === undefined ? null : new Set(allowedSessionIds);
@@ -104,7 +104,8 @@ export function createInteractionHistoryReader({ tenantId, userId, boundSubject,
     status: () => ({ route: 'Microsoft Graph Interaction Export v1.0', permission: 'AiEnterpriseInteraction.Read.All application', requestsUsed: used, maxRequests, serviceRequestsUsed: budget.used, serviceRequestsMax: budget.max, from, to, loadedWindow: cached ? { from: new Date(cachedFrom).toISOString(), to: new Date(cachedTo).toISOString() } : null, configured: true, providerReadCompleted: cached !== null, selectedSessionCount: allowed?.size ?? null, revoked, expired: Date.now() >= deadline }),
     async list({ from: requestedFrom = from, to: requestedTo = to, query, sessionIds } = {}) {
       const queryStart = Date.parse(requestedFrom), queryEnd = Date.parse(requestedTo);
-      if (!Number.isFinite(queryStart) || !Number.isFinite(queryEnd) || queryStart < start || queryEnd > end || queryStart >= queryEnd) fail('INVALID_HISTORY_WINDOW');
+      const now = Date.now();
+      if (!Number.isFinite(queryStart) || !Number.isFinite(queryEnd) || queryStart >= queryEnd || queryStart < now - maxLookbackMs || queryEnd > now + 86400000) fail('INVALID_HISTORY_WINDOW');
       if (query !== undefined && (typeof query !== 'string' || query.length > 100)) fail('INVALID_HISTORY_QUERY');
       if (sessionIds !== undefined && (!Array.isArray(sessionIds) || sessionIds.length > 100 || sessionIds.some(id => typeof id !== 'string' || !id || (allowed && !allowed.has(id))))) fail('INVALID_HISTORY_SESSION_SELECTION');
       const snapshot = await ready(queryStart, queryEnd); const needle = query?.trim().toLocaleLowerCase() ?? '';

@@ -4,7 +4,8 @@ export const config = Object.freeze({
   tenantId: process.env.M365_MCP_TENANT_ID ?? process.env.MICROSOFT_TENANT_ID ?? '',
   clientId: process.env.M365_MCP_ENTRA_CLIENT_ID ?? process.env.MICROSOFT_CLIENT_ID ?? '',
   allowedUsername: (process.env.M365_MCP_ALLOWED_USERNAME ?? '').toLowerCase(),
-  mcpClientId: process.env.M365_MCP_OAUTH_CLIENT_ID ?? '',
+  // Keep one stable MCP client identity across restarts.
+  mcpClientId: process.env.M365_MCP_OAUTH_CLIENT_ID || 'microsoft-copilot-mcp',
   redirects: list(process.env.M365_MCP_REDIRECT_URIS),
   timeZone: process.env.M365_MCP_TIME_ZONE ?? 'Asia/Shanghai',
   expiresAt: process.env.M365_MCP_EXPIRES_AT ?? '2099-01-01T00:00:00Z',

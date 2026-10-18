@@ -34,7 +34,11 @@ export function createOAuthProvider(origin, { login = startMicrosoftLogin, conne
       async getClient(id) { return clients.get(id); },
       async registerClient(metadata) {
         if (clients.size >= 20 || !metadata.redirect_uris?.length || metadata.redirect_uris.some(uri => !config.redirects.includes(uri))) throw new InvalidRequestError('Only configured MCP callback URLs are allowed');
-        const client = { ...metadata, client_id: opaque(), token_endpoint_auth_method: 'none', client_secret: undefined, grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
+        // Return the configured identity instead of creating an in-memory ID
+        // that changes after every process restart.
+        const configured = clients.get(config.mcpClientId);
+        if (configured) return configured;
+        const client = { ...metadata, client_id: config.mcpClientId, token_endpoint_auth_method: 'none', client_secret: undefined, grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] };
         clients.set(client.client_id, client); return client;
       },
     },
