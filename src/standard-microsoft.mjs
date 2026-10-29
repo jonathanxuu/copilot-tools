@@ -12,6 +12,7 @@ function assertSubject(auth) {
   if (config.allowedUsername && username !== config.allowedUsername) throw new Error('UNAPPROVED_MICROSOFT_ACCOUNT');
   const tenantId = auth.tenantId ?? auth.idTokenClaims?.tid;
   if (config.tenantId !== 'common' && config.tenantId !== 'organizations' && tenantId && tenantId !== config.tenantId) throw new Error('MICROSOFT_TENANT_MISMATCH');
+  if (!guid.test(tenantId ?? '')) throw new Error('MICROSOFT_TENANT_REQUIRED');
   const userId = auth.idTokenClaims?.oid ?? auth.account?.localAccountId;
   if (!guid.test(userId ?? '')) throw new Error('MICROSOFT_USER_ID_REQUIRED');
   return { subject: `${tenantId ?? config.tenantId}:${userId}`, username, userId, tenantId: tenantId ?? config.tenantId };

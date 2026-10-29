@@ -15,8 +15,15 @@ export function createHistoryReaderFactory({ env = process.env } = {}) {
   const privateKey = readFileSync(keyPath, 'utf8');
   if (!/-----BEGIN (?:RSA )?PRIVATE KEY-----/.test(privateKey)) throw new Error('CONFIG_HISTORY_PRIVATE_KEY_INVALID');
   createPrivateKey(privateKey);
-  const client = new ConfidentialClientApplication({ auth: { clientId: config.clientId, authority: `https://login.microsoftonline.com/${config.tenantId}`, clientCertificate: { thumbprintSha256, privateKey } }, system: { loggerOptions: { piiLoggingEnabled: false, loggerCallback: () => {} } } });
-  async function getToken() {
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const clients = new Map();
+  const clientFor = tenantId => {
+    if (!guid.test(tenantId ?? '')) throw new Error('HISTORY_TENANT_REQUIRED');
+    if (!clients.has(tenantId)) clients.set(tenantId, new ConfidentialClientApplication({ auth: { clientId: config.clientId, authority: `https://login.microsoftonline.com/${tenantId}`, clientCertificate: { thumbprintSha256, privateKey } }, system: { loggerOptions: { piiLoggingEnabled: false, loggerCallback: () => {} } } }));
+    return clients.get(tenantId);
+  };
+  async function getToken(tenantId) {
+    const client = clientFor(tenantId);
     const result = await client.acquireTokenByClientCredential({ scopes: [`${graphBase}/.default`] });
     if (!result?.accessToken) throw new Error('HISTORY_TOKEN_UNAVAILABLE');
     return result.accessToken;
@@ -25,6 +32,6 @@ export function createHistoryReaderFactory({ env = process.env } = {}) {
   return identity => {
     const to = Date.now();
     const from = to - defaultDays * 86400000;
-    return createInteractionHistoryReader({ tenantId: config.tenantId, userId: identity.userId, boundSubject: identity.subject, from: new Date(from).toISOString(), to: new Date(to).toISOString(), maxLookbackMs: 5 * 366 * 86400000, deadline: Date.parse(config.expiresAt), maxRequests, budget, allowedSessionIds, getToken, onAudit: event => console.log(JSON.stringify({ time: new Date().toISOString(), userId: identity.userId, ...event })) });
+    return createInteractionHistoryReader({ tenantId: identity.tenantId, userId: identity.userId, boundSubject: identity.subject, from: new Date(from).toISOString(), to: new Date(to).toISOString(), maxLookbackMs: 5 * 366 * 86400000, deadline: Date.parse(config.expiresAt), maxRequests, budget, allowedSessionIds, getToken: () => getToken(identity.tenantId), onAudit: event => console.log(JSON.stringify({ time: new Date().toISOString(), tenantId: identity.tenantId, userId: identity.userId, ...event })) });
   };
 }

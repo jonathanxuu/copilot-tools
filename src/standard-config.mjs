@@ -28,7 +28,7 @@ export function isAllowedRedirect(uri) {
 export function assertRunnableConfig() {
   const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!config.tenantId || !config.clientId) throw new Error('CONFIG_MICROSOFT_CLIENT_REQUIRED');
-  if (process.env.M365_MCP_HISTORY_ENABLED === 'true' && (!guid.test(config.tenantId) || !guid.test(config.clientId))) throw new Error('CONFIG_HISTORY_TENANT_CLIENT_GUID_REQUIRED');
+  if (process.env.M365_MCP_HISTORY_ENABLED === 'true' && !guid.test(config.clientId)) throw new Error('CONFIG_HISTORY_CLIENT_GUID_REQUIRED');
   if (!config.redirects.length || config.redirects.some(uri => !isAllowedRedirect(uri))) throw new Error('CONFIG_MCP_REDIRECT_REQUIRED');
   if (!Number.isInteger(config.maxGraphRequests) || config.maxGraphRequests < 1 || config.maxGraphRequests > 32) throw new Error('CONFIG_REQUEST_CAP_INVALID');
   if (!Number.isInteger(config.maxPageBytes) || config.maxPageBytes < 1024 || config.maxPageBytes > 16 * 1024 * 1024) throw new Error('CONFIG_PAGE_SIZE_INVALID');
