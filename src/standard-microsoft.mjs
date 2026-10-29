@@ -1,4 +1,5 @@
-import { PublicClientApplication } from '@azure/msal-node';
+import { readFileSync } from 'node:fs';
+import { ConfidentialClientApplication, PublicClientApplication } from '@azure/msal-node';
 import { randomUUID } from 'node:crypto';
 import { config, graphBase } from './standard-config.mjs';
 import { loopbackLogin } from './loopback-login.mjs';
@@ -19,12 +20,24 @@ function assertSubject(auth) {
   return { subject: `${tenantId ?? config.tenantId}:${userId}`, username, userId, tenantId: tenantId ?? config.tenantId };
 }
 
+function createMicrosoftClient() {
+  const auth = { clientId: config.clientId, authority: `https://login.microsoftonline.com/${config.tenantId}` };
+  if (config.loginMode !== 'browser') return new PublicClientApplication({ auth, cache: { cachePlugin: createMsalCachePlugin() }, system: { loggerOptions: { piiLoggingEnabled: false, loggerCallback: () => {} } } });
+
+  const clientSecret = process.env.M365_MCP_ENTRA_CLIENT_SECRET;
+  const keyPath = process.env.M365_MCP_ENTRA_PRIVATE_KEY_PATH ?? process.env.M365_MCP_HISTORY_PRIVATE_KEY_PATH;
+  const thumbprintSha256 = (process.env.M365_MCP_ENTRA_CERT_THUMBPRINT_SHA256 ?? process.env.M365_MCP_HISTORY_CERT_THUMBPRINT_SHA256 ?? '').replace(/[:\s]/g, '');
+  const confidentialAuth = clientSecret
+    ? { ...auth, clientSecret }
+    : keyPath && /^[a-f0-9]{64}$/i.test(thumbprintSha256)
+      ? { ...auth, clientCertificate: { thumbprintSha256, privateKey: readFileSync(keyPath, 'utf8') } }
+      : undefined;
+  if (!confidentialAuth) throw new Error('CONFIG_BROWSER_CLIENT_CREDENTIAL_REQUIRED');
+  return new ConfidentialClientApplication({ auth: confidentialAuth, cache: { cachePlugin: createMsalCachePlugin() }, system: { loggerOptions: { piiLoggingEnabled: false, loggerCallback: () => {} } } });
+}
+
 export function startMicrosoftLogin(onReady, { successRedirectUrl } = {}) {
-  const pca = new PublicClientApplication({
-    auth: { clientId: config.clientId, authority: `https://login.microsoftonline.com/${config.tenantId}` },
-    cache: { cachePlugin: createMsalCachePlugin() },
-    system: { loggerOptions: { piiLoggingEnabled: false, loggerCallback: () => {} } },
-  });
+  const pca = createMicrosoftClient();
   const scopes = config.graphScopes.map(scope => ['openid', 'profile', 'offline_access'].includes(scope) || scope.includes('/') ? scope : `${graphBase}/${scope}`);
   const login = config.loginMode === 'device-code'
     ? pca.acquireTokenByDeviceCode({ scopes, timeout: 300, deviceCodeCallback: details => onReady(details) })

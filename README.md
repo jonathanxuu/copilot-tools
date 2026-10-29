@@ -60,6 +60,8 @@ MCP endpoint:                  https://your-mcp.example.com/mcp
 
 An MCP client registers its callback through the MCP SDK OAuth router, uses PKCE S256, and then opens the connection page. The connection page starts a Microsoft MSAL browser authorization-code login. Register the exact value of `M365_MCP_BROWSER_REDIRECT_URI` as a Web redirect URI in the Entra app registration. Add the MCP client's callback URL to `M365_MCP_REDIRECT_URIS`. Do not configure a shared Microsoft token.
 
+The hosted browser flow uses a confidential Microsoft client. Configure either `M365_MCP_ENTRA_CLIENT_SECRET`, or `M365_MCP_ENTRA_PRIVATE_KEY_PATH` together with `M365_MCP_ENTRA_CERT_THUMBPRINT_SHA256`. If Interaction Export is enabled, the browser flow can reuse `M365_MCP_HISTORY_PRIVATE_KEY_PATH` and `M365_MCP_HISTORY_CERT_THUMBPRINT_SHA256` when the same certificate is registered on the app.
+
 ## Important configuration notes
 
 Microsoft Copilot history and Pages are separate Microsoft capabilities. History uses the Interaction Export API with app-only certificate permission. Pages are currently disabled in the MCP tool list because their SharePoint Embedded container access requires additional app-only guest application configuration.
