@@ -45,6 +45,13 @@ export function installBrowserCallback(app, { path = '/microsoft/callback' } = {
       item.resolve(result);
       res.redirect(item.successRedirectUrl);
     } catch (error) {
+      console.warn(JSON.stringify({
+        event: 'microsoft_browser_callback_failed',
+        errorCode: error?.errorCode ?? null,
+        subError: error?.subError ?? null,
+        correlationId: error?.correlationId ?? null,
+        message: error instanceof Error ? error.message.slice(0, 500) : 'MICROSOFT_TOKEN_EXCHANGE_FAILED',
+      }));
       item.reject(error);
       res.status(400).type('html').send(html('Microsoft login', 'Microsoft login could not be completed. Return to Counso and try again.'));
     }
