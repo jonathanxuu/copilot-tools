@@ -2,6 +2,7 @@ import { PublicClientApplication } from '@azure/msal-node';
 import { randomUUID } from 'node:crypto';
 import { config, graphBase } from './standard-config.mjs';
 import { loopbackLogin } from './loopback-login.mjs';
+import { browserLogin } from './browser-login.mjs';
 import { createMsalCachePlugin } from './msal-cache.mjs';
 import { createConversationState } from './conversation-state.mjs';
 
@@ -27,7 +28,9 @@ export function startMicrosoftLogin(onReady, { successRedirectUrl } = {}) {
   const scopes = config.graphScopes.map(scope => ['openid', 'profile', 'offline_access'].includes(scope) || scope.includes('/') ? scope : `${graphBase}/${scope}`);
   const login = config.loginMode === 'device-code'
     ? pca.acquireTokenByDeviceCode({ scopes, timeout: 300, deviceCodeCallback: details => onReady(details) })
-    : loopbackLogin(pca, scopes, onReady, { port: Number(process.env.M365_MCP_LOOPBACK_PORT ?? 8788), successRedirectUrl });
+    : config.loginMode === 'browser'
+      ? browserLogin(pca, scopes, onReady, { redirectUri: config.browserRedirectUri, successRedirectUrl })
+      : loopbackLogin(pca, scopes, onReady, { port: Number(process.env.M365_MCP_LOOPBACK_PORT ?? 8788), successRedirectUrl });
   return login.then(auth => {
     const identity = assertSubject(auth);
     return {

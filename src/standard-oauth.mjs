@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { InvalidGrantError, InvalidRequestError, InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { config } from './standard-config.mjs';
 import { createConnection, startMicrosoftLogin } from './standard-microsoft.mjs';
+import { installBrowserCallback } from './browser-login.mjs';
 
 const opaque = () => randomBytes(32).toString('base64url');
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -75,6 +76,7 @@ export function createOAuthProvider(origin, { login = startMicrosoftLogin, conne
     },
     getConnection(id) { const entry = connections.get(id); if (!entry || entry.expires < Date.now()) throw new InvalidTokenError('MCP connection missing'); return entry.connection; },
     installUI(app, formParser) {
+      installBrowserCallback(app);
       const flowFor = req => {
         const id = req.query.flow;
         const flow = typeof id === 'string' ? flows.get(id) : undefined;

@@ -43,10 +43,10 @@ MCP_PUBLIC_ORIGIN=https://copilot-mcp.zkid.xyz
 MCP_BROWSER_ORIGIN=https://copilot-mcp.zkid.xyz
 MCP_BIND_HOST=0.0.0.0
 M365_MCP_TENANT_ID=organizations
-M365_MCP_LOGIN_MODE=device-code
+M365_MCP_LOGIN_MODE=browser
 ```
 
-`MCP_PUBLIC_ORIGIN` is the origin advertised to remote MCP clients. `MCP_BROWSER_ORIGIN` is the origin used for the browser OAuth flow; keeping them identical prevents OAuth cookies from being split across hostnames. `organizations` allows work/school accounts from multiple Entra tenants; customer administrators still need to consent to the app. `device-code` is required for a remote server because the loopback callback is only suitable when the browser and MCP server run on the same machine.
+`MCP_PUBLIC_ORIGIN` is the origin advertised to remote MCP clients. `MCP_BROWSER_ORIGIN` is the origin used for the browser OAuth flow; keeping them identical prevents OAuth cookies from being split across hostnames. `organizations` allows work/school accounts from multiple Entra tenants; customer administrators still need to consent to the app. Use `browser` for a hosted HTTPS service: Microsoft redirects the user to `M365_MCP_BROWSER_REDIRECT_URI` on this server. `device-code` is retained only for legacy environments because customer tenants may block device-code flow with Security Defaults.
 
 The server exposes standard MCP OAuth endpoints:
 
@@ -58,7 +58,7 @@ Token endpoint:                https://your-mcp.example.com/oauth/token
 MCP endpoint:                  https://your-mcp.example.com/mcp
 ```
 
-An MCP client registers its callback through the MCP SDK OAuth router, uses PKCE S256, and then opens the connection page. The connection page starts a Microsoft MSAL login using a loopback callback on `127.0.0.1:8788`. Add the MCP client's callback URL to `M365_MCP_REDIRECT_URIS`; add the Entra app's delegated redirect URI `http://localhost:8788` if required by the app registration. Do not configure a shared Microsoft token.
+An MCP client registers its callback through the MCP SDK OAuth router, uses PKCE S256, and then opens the connection page. The connection page starts a Microsoft MSAL browser authorization-code login. Register the exact value of `M365_MCP_BROWSER_REDIRECT_URI` as a Web redirect URI in the Entra app registration. Add the MCP client's callback URL to `M365_MCP_REDIRECT_URIS`. Do not configure a shared Microsoft token.
 
 ## Important configuration notes
 
